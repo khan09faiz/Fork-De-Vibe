@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  spotifyId     String   @unique @map("spotify_id")
+  email         String   @unique
+  username      String   @unique
+  displayName   String?  @map("display_name")
+  imageUrl      String?  @map("image_url")
+  isPublic      Boolean  @default(true) @map("is_public")
+  profileReadme String?  @db.Text @map("profile_readme")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  listeningHistory DailyListening[]
+  topArtists       UserTopArtist[]
+  topTracks        UserTopTrack[]
+  personality      MusicPersonality?
+  followers        Follow[]          @relation("UserFollowers")
+  following        Follow[]          @relation("UserFollowing")
+
+  @@index([username])
+  @@index([spotifyId])
+  @@map("users")
+}
+
+model DailyListening {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  date        String
+  minutes     Int
+  topTrackId  String?  @map("top_track_id")
+  topArtistId String?  @map("top_artist_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("daily_listening")
+}
+
+model UserTopArtist {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  spotifyId  String   @map("spotify_id")
+  name       String
+  genres     String[]
+  imageUrl   String?  @map("image_url")
+  popularity Int
+  timeRange  String   @map("time_range")
+  rank       Int
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, timeRange, rank])
+  @@index([userId, timeRange])
+  @@map("user_top_artists")
+}
+
+model UserTopTrack {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  spotifyId   String   @map("spotify_id")
+  name        String
+  artistName  String   @map("artist_name")
+  albumName   String   @map("album_name")
+  imageUrl    String?  @map("image_url")
+  previewUrl  String?  @map("preview_url")
+  timeRange   String   @map("time_range")
+  rank        Int
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, timeRange, rank])
+  @@index([userId, timeRange])
+  @@map("user_top_tracks")
+}
+
+model MusicPersonality {
+  id             String   @id @default(cuid())
+  userId         String   @unique @map("user_id")
+  tags           String[]
+  genreDiversity Float    @map("genre_diversity")
+  repeatRate     Float    @map("repeat_rate")
+  uniqueArtists  Int      @map("unique_artists")
+  longestStreak  Int      @map("longest_streak")
+  currentStreak  Int      @map("current_streak")
+  streakArtist   String?  @map("streak_artist")
+  computedAt     DateTime @default(now()) @map("computed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("music_personality")
+}
+
+model Follow {
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
