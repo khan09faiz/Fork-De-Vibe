@@ -97,6 +97,21 @@ export const authOptions: NextAuthOptions = {
     },
     async signIn({ user, account }) {
       if (account?.provider === 'spotify') {
+        // Fetch full user profile from Spotify to get country and other data
+        let spotifyUserData = null;
+        try {
+          const response = await fetch('https://api.spotify.com/v1/me', {
+            headers: {
+              Authorization: `Bearer ${account.access_token}`
+            }
+          });
+          if (response.ok) {
+            spotifyUserData = await response.json();
+          }
+        } catch (error) {
+          console.error('Error fetching Spotify user data:', error);
+        }
+
         const existingUser = await db.user.findUnique({
           where: { spotifyId: account.providerAccountId }
         });
@@ -123,9 +138,18 @@ export const authOptions: NextAuthOptions = {
               username,
               displayName: user.name,
               imageUrl: user.image,
+              country: spotifyUserData?.country || null, // ISO 3166-1 alpha-2 code from Spotify
               isPublic: true
             }
           });
+        } else {
+          // Update country if it's not set or if it changed
+          if (spotifyUserData?.country && existingUser.country !== spotifyUserData.country) {
+            await db.user.update({
+              where: { id: existingUser.id },
+              data: { country: spotifyUserData.country }
+            });
+          }
         }
       }
       return true;
@@ -353,8 +377,3 @@ export default async function DashboardPage() {
 **Issue:** Token refresh fails
 **Solution:** Verify Client Secret is correct, check Spotify API logs
 
-## Next Phase
-
-Continue to [Phase 3: Spotify API Integration](phase-3-spotify-api.md)
-
-**Last Updated:** January 22, 2026

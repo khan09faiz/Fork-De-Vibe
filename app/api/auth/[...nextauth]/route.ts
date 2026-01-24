@@ -83,6 +83,21 @@ export const authOptions: NextAuthOptions = {
     },
     async signIn({ user, account }) {
       if (account?.provider === 'spotify') {
+        // Fetch full user profile from Spotify to get country and other data
+        let spotifyUserData = null;
+        try {
+          const response = await fetch('https://api.spotify.com/v1/me', {
+            headers: {
+              Authorization: `Bearer ${account.access_token}`
+            }
+          });
+          if (response.ok) {
+            spotifyUserData = await response.json();
+          }
+        } catch (error) {
+          console.error('Error fetching Spotify user data:', error);
+        }
+
         const existingUser = await db.user.findUnique({
           where: { spotifyId: account.providerAccountId }
         });
@@ -109,12 +124,20 @@ export const authOptions: NextAuthOptions = {
               username,
               displayName: user.name,
               imageUrl: user.image,
+              country: spotifyUserData?.country || null, // ISO 3166-1 alpha-2 code
               isPublic: true
             }
           });
           
           user.id = newUser.id;
         } else {
+          // Update country if it's not set or if it changed
+          if (spotifyUserData?.country && existingUser.country !== spotifyUserData.country) {
+            await db.user.update({
+              where: { id: existingUser.id },
+              data: { country: spotifyUserData.country }
+            });
+          }
           user.id = existingUser.id;
         }
       }

@@ -91,9 +91,29 @@ Build a web app where users can:
 | **Phase 6** | Public Profile Pages | 2 hours | Defined |
 | **Phase 7** | Personality & Loyalty Features | 3 hours | Defined |
 | **Phase 8** | Profile README Editor | 2 hours | Defined |
-| **Phase 9** | Deployment | 1 hour | Defined |
+| **Phase 9** | Artist Quiz & Leaderboard | 6-8 hours | **NEW** |
+| **Phase 10** | Concert Discovery | 8-10 hours | **NEW** |
+| **Phase 11** | Deployment & Polish | 2 hours | Defined |
 
-**Total Estimated Time:** 20 hours
+**Total Estimated Time:** 35-40 hours
+
+---
+
+## 🆕 NEW FEATURES (v2.0)
+
+### Artist Quiz & Leaderboard System
+- AI-generated quiz questions about favorite artists
+- Monthly leaderboards with tier rankings
+- Badge and achievement system
+- XP progression and leveling
+- Social quiz challenges
+
+### Concert Discovery
+- Web scraping for live concert data
+- Location-based search (country/city)
+- User interactions (interested/going)
+- Ticket information and alerts
+- Social concert planning
 
 ---
 

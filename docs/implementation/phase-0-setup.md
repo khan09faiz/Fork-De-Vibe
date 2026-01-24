@@ -278,6 +278,3 @@ Visit http://localhost:3000 - you should see the Next.js welcome page.
 
 ## Next Phase
 
-Continue to [Phase 1: Database Setup](phase-1-database.md)
-
-**Last Updated:** January 22, 2026

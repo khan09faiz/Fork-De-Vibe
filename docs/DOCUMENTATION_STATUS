@@ -1,7 +1,7 @@
 # TuneHub Documentation Status
 
-**Last Updated:** January 22, 2026  
-**Version:** 1.0
+**Last Updated:** January 24, 2026  
+**Version:** 2.0
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Document | Status | Completion | Last Reviewed | Notes |
 |----------|--------|------------|---------------|-------|
-| **architecture** | ✅ Complete | 100% | Jan 22, 2026 | Comprehensive technical architecture |
+| **architecture** | ✅ Complete | 100% | Jan 24, 2026 | Updated with Quiz & Concert systems |
 | **design** | ✅ Complete | 100% | Jan 22, 2026 | Full design system with all components |
-| **features** | ✅ Complete | 100% | Jan 22, 2026 | All 9 core features documented |
-| **instructions** | 🟡 Partial | 60% | Jan 22, 2026 | Phases 0-4 complete, 5-9 outlined |
-| **edge_cases.md** | ✅ Complete | 100% | Jan 22, 2026 | Comprehensive edge case coverage |
+| **features** | ✅ Complete | 100% | Jan 24, 2026 | 11 features documented (9 core + 2 new) |
+| **implementation** | ✅ Complete | 100% | Jan 24, 2026 | Phases 0-10 complete |
+| **edge-cases** | ✅ Complete | 100% | Jan 24, 2026 | Edge cases for all features |
 
 ### Supporting Documentation
 
@@ -24,8 +24,25 @@
 | **INDEX.md** | ✅ Complete | 100% | Jan 22, 2026 | Documentation index and navigation |
 | **QUICK_START.md** | ✅ Complete | 100% | Jan 22, 2026 | 5-minute setup guide |
 | **SETUP_COMPLETE.md** | ✅ Complete | 100% | Jan 22, 2026 | Verification checklist |
-| **README.md** (root) | 🔴 Not Started | 0% | - | Needs project overview |
-| **DOCUMENTATION_STATUS** | ✅ Complete | 100% | Jan 22, 2026 | This file |
+| **ui-data-structures.md** | ✅ Complete | 100% | Jan 24, 2026 | TypeScript types for all features |
+| **DOCUMENTATION_STATUS** | ✅ Complete | 100% | Jan 24, 2026 | This file |
+
+---
+
+## 🆕 NEW FEATURES (v2.0)
+
+### Feature 10: Artist Quiz & Leaderboard
+- **Format:** 2-minute Quickfire (120 seconds)
+- **Points:** Difficulty-based (5/8/12/18) + listening multiplier
+- **Powerups:** 10 purchasable powerups with points
+- **Leaderboards:** Country-specific + Global
+- **APIs:** FREE only (MusicBrainz, Last.fm, Wikipedia)
+
+### Feature 11: Concert Discovery
+- **Scraping:** FREE APIs (Bandsintown, Songkick, Puppeteer)
+- **Location:** Country/city-based search
+- **Social:** Interested/Going status, friend attendance
+- **Notifications:** New concert alerts
 
 ---
 
@@ -38,6 +55,8 @@
 - Detailed folder structure with explanations
 - Data flow diagrams
 - Database schema (Prisma)
+- Quiz system architecture (FREE APIs)
+- Concert discovery architecture (FREE APIs)
 - Caching strategy
 - Security architecture
 - Deployment architecture
@@ -72,7 +91,7 @@
 ### features (Complete ✅)
 
 **Contents:**
-- 9 core features with full specifications
+- 11 total features with full specifications
 - User stories for each feature
 - Technical specifications
 - Acceptance criteria
@@ -82,12 +101,22 @@
 
 **Quality:** High - Production-ready feature specs
 
-**Needs:**
-- None - Ready for implementation
+**Features:**
+1. Authentication (Spotify OAuth)
+2. Public Profiles
+3. Listening Graph
+4. Top Content
+5. Music Personality
+6. Artist Loyalty
+7. Profile README
+8. Data Sync
+9. Privacy Controls
+10. **Artist Quiz & Leaderboard** (NEW)
+11. **Concert Discovery** (NEW)
 
 ---
 
-### instructions (Partial 🟡)
+### implementation (Complete ✅)
 
 **Contents Complete:**
 - Phase 0: Project Setup (100%)
@@ -95,9 +124,12 @@
 - Phase 2: Authentication (100%)
 - Phase 3: Spotify API Integration (100%)
 - Phase 4: Data Aggregation & Caching (100%)
-
-**Contents Outlined (Not Detailed):**
-- Phase 5: UI Components & Dashboard (Tasks listed, not detailed)
+- Phase 5: Profile Page (100%)
+- Phase 6: UI Components (100%)
+- Phase 7: Calculations (100%)
+- Phase 8: Polish & Deploy (100%)
+- **Phase 9: Quiz & Leaderboard** (100%) - NEW
+- **Phase 10: Concert Discovery** (100%) - NEW
 - Phase 6: Public Profile Pages (Tasks listed, not detailed)
 - Phase 7: Personality & Loyalty Features (Tasks listed, not detailed)
 - Phase 8: Profile README Editor (Tasks listed, not detailed)

@@ -16,6 +16,7 @@ model User {
   imageUrl      String?  @map("image_url")
   isPublic      Boolean  @default(true) @map("is_public")
   profileReadme String?  @db.Text @map("profile_readme")
+  country       String?  // ISO 3166-1 alpha-2 code for leaderboards
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -25,9 +26,23 @@ model User {
   personality      MusicPersonality?
   followers        Follow[]          @relation("UserFollowers")
   following        Follow[]          @relation("UserFollowing")
+  
+  // Quiz & Leaderboard relations (Phase 9)
+  quizSessions        QuickfireSession[]
+  quizStats           UserQuizStats?
+  powerupInventory    UserPowerupInventory[]
+  powerupPurchases    PowerupPurchase[]
+  badges              Badge[]
+  leaderboardEntries  LeaderboardEntry[]
+  
+  // Concert relations (Phase 10)
+  userLocations       UserLocation[]
+  concertInteractions UserConcertInteraction[]
+  concertReminders    ConcertReminder[]
 
   @@index([username])
   @@index([spotifyId])
+  @@index([country])
   @@map("users")
 }
 
@@ -113,4 +128,424 @@ model Follow {
 
   @@id([followerId, followingId])
   @@map("follows")
+}
+
+// ============================================
+// QUIZ & POINTS SYSTEM (Phase 9)
+// ============================================
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  artistId      String   @map("artist_id")
+  artistName    String   @map("artist_name")
+  type          String   // multiple_choice, true_false, year_guess, etc.
+  difficulty    String   // easy, medium, hard, expert
+  question      String   @db.Text
+  options       String[] 
+  correctAnswer String   @map("correct_answer")
+  explanation   String?  @db.Text
+  source        String?  // last.fm, musicbrainz, wikipedia
+  usageCount    Int      @default(0) @map("usage_count")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  answers       QuizAnswer[]
+  
+  @@index([artistId, difficulty, isActive])
+  @@map("quiz_questions")
+}
+
+model QuickfireSession {
+  id                   String    @id @default(cuid())
+  userId               String    @map("user_id")
+  artistId             String    @map("artist_id")
+  artistName           String    @map("artist_name")
+  
+  // Time tracking (base 120 seconds)
+  totalDuration        Int       @default(120) @map("total_duration")
+  bonusTimeAdded       Int       @default(0) @map("bonus_time_added")
+  timePenalties        Int       @default(0) @map("time_penalties")
+  
+  // Question stats
+  questionsAnswered    Int       @default(0) @map("questions_answered")
+  correctAnswers       Int       @default(0) @map("correct_answers")
+  wrongAnswers         Int       @default(0) @map("wrong_answers")
+  longestStreak        Int       @default(0) @map("longest_streak")
+  
+  // Points breakdown
+  basePoints           Int       @default(0) @map("base_points")
+  streakBonus          Int       @default(0) @map("streak_bonus")
+  listeningBonus       Int       @default(0) @map("listening_bonus")
+  multiplierBonus      Int       @default(0) @map("multiplier_bonus")
+  penaltyPoints        Int       @default(0) @map("penalty_points")
+  finalScore           Int       @default(0) @map("final_score")
+  
+  // Listening multiplier snapshot
+  artistListeningHours Float     @default(0) @map("artist_listening_hours")
+  listeningMultiplier  Float     @default(1.0) @map("listening_multiplier")
+  
+  status               String    @default("active") // active, completed, abandoned
+  startedAt            DateTime  @default(now()) @map("started_at")
+  completedAt          DateTime? @map("completed_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers              QuizAnswer[]
+  powerupUsages        PowerupUsage[]
+  
+  @@index([userId, status])
+  @@index([artistId, finalScore])
+  @@map("quickfire_sessions")
+}
+
+model QuizAnswer {
+  id               String   @id @default(cuid())
+  sessionId        String   @map("session_id")
+  questionId       String   @map("question_id")
+  selectedAnswer   String   @map("selected_answer")
+  isCorrect        Boolean  @map("is_correct")
+  difficulty       String
+  basePoints       Int      @map("base_points")
+  bonusPoints      Int      @default(0) @map("bonus_points")
+  penaltyPoints    Int      @default(0) @map("penalty_points")
+  netPoints        Int      @map("net_points")
+  timeTaken        Float    @map("time_taken")
+  streakAtAnswer   Int      @default(0) @map("streak_at_answer")
+  multiplierActive Float    @default(1.0) @map("multiplier_active")
+  answeredAt       DateTime @default(now()) @map("answered_at")
+  
+  session          QuickfireSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question         QuizQuestion     @relation(fields: [questionId], references: [id])
+  
+  @@index([sessionId])
+  @@map("quiz_answers")
+}
+
+model UserQuizStats {
+  id                    String    @id @default(cuid())
+  userId                String    @unique @map("user_id")
+  country               String?   // ISO country code for leaderboards
+  
+  // Points economy
+  totalPoints           Int       @default(0) @map("total_points")
+  pointsSpentOnPowerups Int       @default(0) @map("points_spent_powerups")
+  availablePoints       Int       @default(0) @map("available_points")
+  
+  // Performance stats
+  quizzesCompleted      Int       @default(0) @map("quizzes_completed")
+  totalQuestionsAnswered Int      @default(0) @map("total_questions_answered")
+  totalCorrect          Int       @default(0) @map("total_correct")
+  totalWrong            Int       @default(0) @map("total_wrong")
+  bestSingleScore       Int       @default(0) @map("best_single_score")
+  longestStreak         Int       @default(0) @map("longest_streak")
+  
+  // Daily streaks
+  currentDailyStreak    Int       @default(0) @map("current_daily_streak")
+  longestDailyStreak    Int       @default(0) @map("longest_daily_streak")
+  lastPlayedAt          DateTime? @map("last_played_at")
+  
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_quiz_stats")
+}
+
+// ============================================
+// POWERUP SYSTEM (Phase 9)
+// ============================================
+
+model Powerup {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  description     String
+  cost            Int      // Points to purchase
+  icon            String
+  effectType      String   @map("effect_type") // freeze_time, add_time, multiplier, etc.
+  effectValue     Json     @map("effect_value")
+  maxPerSession   Int      @default(3) @map("max_per_session")
+  cooldownSeconds Int?     @map("cooldown_seconds")
+  isActive        Boolean  @default(true) @map("is_active")
+  
+  inventory       UserPowerupInventory[]
+  usages          PowerupUsage[]
+  purchases       PowerupPurchase[]
+  
+  @@map("powerups")
+}
+
+model UserPowerupInventory {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  powerupId   String   @map("powerup_id")
+  quantity    Int      @default(0)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  powerup     Powerup  @relation(fields: [powerupId], references: [id])
+  
+  @@unique([userId, powerupId])
+  @@map("user_powerup_inventory")
+}
+
+model PowerupUsage {
+  id               String   @id @default(cuid())
+  sessionId        String   @map("session_id")
+  powerupId        String   @map("powerup_id")
+  usedAtTimeLeft   Int      @map("used_at_time_left")
+  usedOnQuestionId String?  @map("used_on_question_id")
+  usedAt           DateTime @default(now()) @map("used_at")
+  
+  session          QuickfireSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  powerup          Powerup          @relation(fields: [powerupId], references: [id])
+  
+  @@index([sessionId])
+  @@map("powerup_usages")
+}
+
+model PowerupPurchase {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  powerupId   String   @map("powerup_id")
+  quantity    Int
+  unitCost    Int      @map("unit_cost")
+  totalCost   Int      @map("total_cost")
+  discount    Float    @default(0)
+  purchasedAt DateTime @default(now()) @map("purchased_at")
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  powerup     Powerup  @relation(fields: [powerupId], references: [id])
+  
+  @@index([userId])
+  @@map("powerup_purchases")
+}
+
+// ============================================
+// LEADERBOARD SYSTEM (Phase 9)
+// ============================================
+
+model Leaderboard {
+  id          String   @id @default(cuid())
+  scope       String   // global, country, artist_global, artist_country
+  country     String?  // ISO code for country-specific
+  artistId    String?  @map("artist_id")
+  period      String   // daily, weekly, monthly, all_time
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  entries     LeaderboardEntry[]
+  
+  @@unique([scope, country, artistId, period, startDate])
+  @@map("leaderboards")
+}
+
+model LeaderboardEntry {
+  id              String   @id @default(cuid())
+  leaderboardId   String   @map("leaderboard_id")
+  userId          String   @map("user_id")
+  rank            Int
+  previousRank    Int?     @map("previous_rank")
+  totalScore      Int      @map("total_score")
+  quizzesPlayed   Int      @map("quizzes_played")
+  bestSingleQuiz  Int      @map("best_single_quiz")
+  totalCorrect    Int      @map("total_correct")
+  accuracy        Float
+  tier            String   @default("bronze") // bronze, silver, gold, platinum, diamond, legend
+  firstQuizAt     DateTime @default(now()) @map("first_quiz_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  leaderboard     Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([leaderboardId, userId])
+  @@index([leaderboardId, rank])
+  @@map("leaderboard_entries")
+}
+
+model LeaderboardHistory {
+  id          String   @id @default(cuid())
+  scope       String
+  country     String?
+  artistId    String?  @map("artist_id")
+  period      String
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  winnerId    String   @map("winner_id")
+  winnerScore Int      @map("winner_score")
+  topEntries  Json     @map("top_entries")
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@map("leaderboard_history")
+}
+
+// ============================================
+// BADGE SYSTEM (Phase 9)
+// ============================================
+
+model Badge {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  badgeType   String   @map("badge_type")
+  artistId    String?  @map("artist_id")
+  metadata    Json?
+  awardedAt   DateTime @default(now()) @map("awarded_at")
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, badgeType, artistId])
+  @@index([userId])
+  @@map("badges")
+}
+
+// ============================================
+// CONCERT SYSTEM (Phase 10)
+// ============================================
+
+model Concert {
+  id                String   @id @default(cuid())
+  artistId          String   @map("artist_id")
+  artistName        String   @map("artist_name")
+  artistImageUrl    String?  @map("artist_image_url")
+  eventName         String   @map("event_name")
+  tourName          String?  @map("tour_name")
+  eventType         String   @map("event_type")
+  venueId           String   @map("venue_id")
+  date              DateTime
+  doorsOpen         String?  @map("doors_open")
+  startTime         String?  @map("start_time")
+  timezone          String
+  ticketStatus      String   @map("ticket_status")
+  ticketUrl         String?  @map("ticket_url")
+  minPrice          Float?   @map("min_price")
+  maxPrice          Float?   @map("max_price")
+  currency          String?
+  supportingActs    String[] @map("supporting_acts")
+  ageRestriction    String?  @map("age_restriction")
+  description       String?  @db.Text
+  imageUrl          String?  @map("image_url")
+  sourceId          String   @map("source_id")
+  sourceName        String   @map("source_name")
+  interestedCount   Int      @default(0) @map("interested_count")
+  attendingCount    Int      @default(0) @map("attending_count")
+  lastUpdatedAt     DateTime @updatedAt @map("last_updated_at")
+  verifiedAt        DateTime? @map("verified_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  
+  venue             Venue    @relation(fields: [venueId], references: [id])
+  ticketSources     TicketSource[]
+  interactions      UserConcertInteraction[]
+  reminders         ConcertReminder[]
+  
+  @@unique([artistId, venueId, date])
+  @@index([artistId])
+  @@index([date])
+  @@map("concerts")
+}
+
+model Venue {
+  id           String   @id @default(cuid())
+  name         String
+  address      String
+  city         String
+  region       String?
+  country      String
+  countryCode  String   @map("country_code")
+  postalCode   String?  @map("postal_code")
+  latitude     Float
+  longitude    Float
+  capacity     Int?
+  venueType    String?  @map("venue_type")
+  imageUrl     String?  @map("image_url")
+  website      String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  concerts     Concert[]
+  
+  @@unique([name, city, countryCode])
+  @@index([countryCode, city])
+  @@map("venues")
+}
+
+model TicketSource {
+  id           String  @id @default(cuid())
+  concertId    String  @map("concert_id")
+  name         String
+  url          String
+  minPrice     Float?  @map("min_price")
+  maxPrice     Float?  @map("max_price")
+  availability String
+  isOfficial   Boolean @default(false) @map("is_official")
+  fees         Float?
+  
+  concert      Concert @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  
+  @@map("ticket_sources")
+}
+
+model UserLocation {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  country      String
+  countryName  String   @map("country_name")
+  region       String?
+  city         String?
+  latitude     Float?
+  longitude    Float?
+  searchRadius Int      @default(100) @map("search_radius")
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("user_locations")
+}
+
+model UserConcertInteraction {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  concertId    String   @map("concert_id")
+  status       String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concert      Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, concertId])
+  @@map("user_concert_interactions")
+}
+
+model ConcertReminder {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  concertId    String   @map("concert_id")
+  reminderType String   @map("reminder_type")
+  scheduledFor DateTime @map("scheduled_for")
+  sent         Boolean  @default(false)
+  sentAt       DateTime? @map("sent_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concert      Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, concertId, reminderType])
+  @@map("concert_reminders")
+}
+
+model ScrapingJob {
+  id             String    @id @default(cuid())
+  type           String
+  status         String    @default("pending")
+  artistId       String?   @map("artist_id")
+  location       Json?
+  startedAt      DateTime? @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  concertsFound  Int       @default(0) @map("concerts_found")
+  errors         Json?
+  retryCount     Int       @default(0) @map("retry_count")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  
+  @@index([status, createdAt])
+  @@map("scraping_jobs")
 }

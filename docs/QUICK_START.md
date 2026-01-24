@@ -38,8 +38,14 @@ npm install
    - **App Description:** GitHub for Music Taste
    - **Redirect URI:** `http://localhost:3000/api/auth/callback/spotify`
    - **APIs used:** Web API
+   - **Scopes:** user-read-email, user-read-private, user-top-read, user-read-recently-played
 4. Click **"Save"**
 5. Copy **Client ID** and **Client Secret** (click "Show Client Secret")
+
+**Note:** Spotify API automatically provides user's country during authentication. This data is saved to the database for:
+- Country-specific leaderboards in quiz system
+- Concert discovery in user's region
+- No manual location input required!
 
 ### Step 3: Setup Environment Variables (1 min)
 

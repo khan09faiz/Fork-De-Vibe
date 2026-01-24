@@ -86,6 +86,38 @@ Handling time zones correctly:
 
 ---
 
+### [Quiz System Edge Cases](quiz.md) **NEW**
+Handling quiz and leaderboard edge cases:
+- AI generation failures
+- Question accuracy validation
+- Session interruption recovery
+- Timer expiration handling
+- Duplicate answer prevention
+- Tie breaking in leaderboards
+- Monthly reset timing
+- Cheating detection
+- Badge duplicate prevention
+
+**Read this before:** Implementing quiz or leaderboard features
+
+---
+
+### [Concert Discovery Edge Cases](concerts.md) **NEW**
+Handling concert scraping and search edge cases:
+- Scraping source unavailability
+- Rate limiting from sources
+- Inconsistent data formats
+- Duplicate concert detection
+- Incorrect/outdated data
+- Ambiguous location names
+- Cancelled/postponed events
+- Timezone display issues
+- Reminder delivery failures
+
+**Read this before:** Implementing concert discovery features
+
+---
+
 ## Quick Reference
 
 ### Critical Rules
@@ -98,6 +130,8 @@ Handling time zones correctly:
 6. **Always handle empty states** - Show helpful messages
 7. **Always store dates as strings** - YYYY-MM-DD in user's timezone
 8. **Always implement loading states** - Never show blank screens
+9. **Always validate AI output** - Never trust generated content blindly
+10. **Always implement fallbacks** - For scraping and external APIs
 
 ---
 

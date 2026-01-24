@@ -156,6 +156,92 @@ Return success + revalidate profile cache
 
 ---
 
+## New Feature Architecture (v2.0)
+
+### Artist Quiz System
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Quiz Flow                               │
+├─────────────────────────────────────────────────────────────┤
+│  User selects artist                                        │
+│         ↓                                                   │
+│  Check question cache                                       │
+│         ↓                                                   │
+│  Cache hit? → Serve cached questions                        │
+│  Cache miss? → Generate from MusicBrainz/Last.fm/Wikipedia  │
+│         ↓                                                   │
+│  Create quiz session                                        │
+│         ↓                                                   │
+│  User answers questions (real-time scoring)                 │
+│         ↓                                                   │
+│  Session complete → Update leaderboard                      │
+│         ↓                                                   │
+│  Check badge criteria → Award badges                        │
+│         ↓                                                   │
+│  Update user XP and stats                                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Components:**
+- **Question Generator**: Template-based generation using MusicBrainz + Last.fm + Wikipedia data (free APIs)
+- **Session Manager**: Handles quiz state, timing, scoring
+- **Leaderboard Service**: Real-time ranking calculations
+- **Badge Engine**: Achievement criteria checking and awarding
+- **XP System**: Level progression and unlocks
+
+### Concert Discovery System
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Concert Data Flow                         │
+├─────────────────────────────────────────────────────────────┤
+│  Scheduled Cron Jobs (every 6 hours)                        │
+│         ↓                                                   │
+│  Free APIs + Puppeteer Scraper                              │
+│    ├── Bandsintown API (free tier)                          │
+│    ├── Songkick API (free tier)                             │
+│    ├── Puppeteer (Ticketmaster scraping)                    │
+│    └── Cheerio (HTML parsing)                               │
+│         ↓                                                   │
+│  Data Normalizer (format, dedupe, validate)                 │
+│         ↓                                                   │
+│  PostgreSQL Concert Database                                │
+│         ↓                                                   │
+│  User Search Request                                        │
+│    ├── Location filter                                      │
+│    ├── Artist filter                                        │
+│    └── Date range filter                                    │
+│         ↓                                                   │
+│  Recommendation Engine                                      │
+│    ├── Top artist matching                                  │
+│    ├── Genre similarity                                     │
+│    └── Social signals (friends going)                       │
+│         ↓                                                   │
+│  Results to User                                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Components:**
+- **Scraper Service**: Free APIs (Bandsintown, Songkick) + Puppeteer/Cheerio scraping
+- **Data Processor**: Normalization, deduplication, validation
+- **Location Service**: Geocoding and radius search
+- **Notification System**: Concert alerts and reminders
+- **Recommendation Engine**: Personalized concert suggestions
+
+### External API Dependencies (ALL FREE)
+
+| Service | Purpose | Rate Limits |
+|---------|---------|-------------|
+| MusicBrainz API | Artist metadata, discography | 1 req/sec (free) |
+| Last.fm API | Artist info, similar artists | 5 req/sec (free) |
+| Wikipedia API | Artist facts, biography | 200 req/sec (free) |
+| Bandsintown API | Concert data | 30 req/min (free) |
+| Songkick API | Concert/tour data | 20 req/min (free) |
+| Geocoding (Nominatim) | Location resolution | 1 req/sec (free) |
+
+---
+
 ## Security Model
 
 ### Authentication Flow
@@ -176,6 +262,8 @@ Return success + revalidate profile cache
 - XSS prevention with DOMPurify
 - SQL injection prevented by Prisma
 - HTTPS only in production
+- AI-generated content validated before display
+- Scraping rate limits to prevent abuse
 
 ---
 
@@ -201,4 +289,4 @@ git push origin main  # Auto-deploys to Vercel
 
 ---
 
-**Last Updated:** January 22, 2026
+**Last Updated:** January 24, 2026
